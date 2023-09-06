@@ -1,14 +1,24 @@
 const { OpenFeature } = require('@openfeature/js-sdk');
-const { FlagdProvider } = require('@openfeature/flagd-provider');
+const { InMemoryProvider } = require('@openfeature/in-memory-provider');
+const { createFeatureFlagRouter } = require('feature-toggle-router');
 
-OpenFeature.setProvider(new FlagdProvider({socketPath: '/var/run/flagd.sock'}));
-
+const FLAG_CONFIGURATION = {
+	"sendEmail": false
+}
 
 const client = OpenFeature.getClient();
 
-(async ()=> {
-	const message = await client.getStringValue("helloMessage", "This is the default hello message");
+OpenFeature.setProvider(new InMemoryProvider(FLAG_CONFIGURATION));
 
-	console.log(message);
+
+(async ()=> {
+
+	const sendEmailFFRouter = createFeatureFlagRouter(client, "sendEmail", false)
+
+	await sendEmailFFRouter([
+		{flagValue: true, flow: ()=> console.log("Sending email! (it's enabled)")},
+		{flagValue: false, flow: ()=> console.log("Email won't be sent :( (feature disabled)")}
+	]);
+
 	OpenFeature.close();	
 })()
